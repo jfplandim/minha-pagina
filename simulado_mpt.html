@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulado MPT — TI</title>
+<style>
+  :root{
+    --base:#1e1e2e; --mantle:#181825; --crust:#11111b;
+    --surface0:#313244; --surface1:#45475a; --surface2:#585b70;
+    --text:#cdd6f4; --subtext:#a6adc8; --overlay:#9399b2;
+    --accent:#cba6f7; --accent2:#89b4fa; --blue:#89b4fa;
+    --green:#a6e3a1; --red:#f38ba8; --yellow:#f9e2af; --peach:#fab387;
+    --pink:#f5c2e7; --teal:#94e2d5;
+    --radius:14px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 20% 0%, #232336 0%, var(--base) 45%, var(--crust) 100%);
+    color:var(--text);
+    font-family:"Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+    min-height:100vh;
+    line-height:1.55;
+    padding-bottom:80px;
+  }
+
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(24,24,37,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid var(--surface0);
+    padding:14px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    flex-wrap:wrap;
+  }
+  .topbar h1{
+    font-size:1.05rem; margin:0; font-weight:700; letter-spacing:.2px;
+    color:var(--text);
+    display:flex; align-items:center; gap:10px;
+  }
+  .topbar h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
+  .progress-wrap{
+    flex:1; max-width:360px; min-width:180px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .progress-track{
+    flex:1; height:8px; border-radius:6px; background:var(--surface0); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; width:0%; border-radius:6px;
+    background:linear-gradient(90deg, var(--accent2), var(--accent));
+    transition:width .35s ease;
+  }
+  .progress-label{font-size:.78rem; color:var(--subtext); white-space:nowrap;}
+
+  main{
+    max-width:760px; margin:0 auto; padding:28px 18px 0;
+  }
+
+  .intro{
+    background:linear-gradient(135deg, rgba(203,166,247,0.10), rgba(137,180,250,0.06));
+    border:1px solid var(--surface0);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    margin-bottom:30px;
+  }
+  .intro h2{margin:0 0 8px; font-size:1.3rem; color:var(--text);}
+  .intro p{margin:0; color:var(--subtext); font-size:.92rem;}
+
+  .exam-divider{
+    margin:42px 0 18px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .exam-divider .line{flex:1; height:1px; background:var(--surface0);}
+  .exam-divider span{
+    font-size:.78rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--peach);
+    background:rgba(250,179,135,0.08);
+    border:1px solid rgba(250,179,135,0.25);
+    padding:6px 14px; border-radius:20px;
+  }
+
+  .context-box{
+    background:var(--mantle);
+    border-left:3px solid var(--teal);
+    border-radius:10px;
+    padding:16px 18px;
+    margin:0 0 16px;
+    font-size:.88rem;
+    color:var(--subtext);
+  }
+  .context-box strong{color:var(--teal); display:block; margin-bottom:6px; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em;}
+
+  .card{
+    background:var(--mantle);
+    border:1px solid var(--surface0);
+    border-radius:var(--radius);
+    padding:22px 22px 20px;
+    margin-bottom:18px;
+    transition:border-color .25s, box-shadow .25s;
+  }
+  .card.correct-card{border-color:rgba(166,227,161,0.55); box-shadow:0 0 0 1px rgba(166,227,161,0.15) inset;}
+  .card.wrong-card{border-color:rgba(243,139,168,0.55); box-shadow:0 0 0 1px rgba(243,139,168,0.15) inset;}
+
+  .q-head{
+    display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;
+  }
+  .q-num{
+    flex-shrink:0;
+    width:32px; height:32px; border-radius:9px;
+    background:var(--surface0); color:var(--accent2);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.85rem;
+  }
+  .q-text{font-size:.98rem; color:var(--text); padding-top:4px;}
+  .q-tag{
+    display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--pink); background:rgba(245,194,231,0.1);
+    border:1px solid rgba(245,194,231,0.3); border-radius:6px; padding:2px 7px; margin-left:8px;
+    transform:translateY(-2px); display:inline;
+  }
+
+  .options{list-style:none; margin:0 0 16px; padding:0; display:flex; flex-direction:column; gap:9px;}
+  .option{
+    display:flex; align-items:center; gap:12px;
+    border:1px solid var(--surface0);
+    border-radius:10px;
+    padding:11px 14px;
+    cursor:pointer;
+    transition:background .15s, border-color .15s, transform .1s;
+    background:var(--base);
+  }
+  .option:hover:not(.disabled){border-color:var(--accent2); background:var(--surface0);}
+  .option input[type=radio]{
+    accent-color:var(--accent);
+    width:17px; height:17px; flex-shrink:0; cursor:pointer;
+  }
+  .option .letter{
+    font-weight:700; color:var(--overlay); width:18px; flex-shrink:0;
+  }
+  .option .opt-text{font-size:.9rem; color:var(--text);}
+  .option.disabled{cursor:default;}
+  .option.disabled input{cursor:default;}
+
+  .option.is-correct{
+    border-color:var(--green); background:rgba(166,227,161,0.10);
+  }
+  .option.is-correct .letter{color:var(--green);}
+  .option.is-wrong-selected{
+    border-color:var(--red); background:rgba(243,139,168,0.10);
+  }
+  .option.is-wrong-selected .letter{color:var(--red);}
+
+  .confirm-btn{
+    background:linear-gradient(135deg, var(--accent2), var(--accent));
+    color:var(--crust);
+    border:none; border-radius:9px;
+    padding:10px 20px;
+    font-weight:700; font-size:.88rem;
+    cursor:pointer;
+    transition:opacity .15s, transform .1s;
+  }
+  .confirm-btn:hover:not(:disabled){transform:translateY(-1px);}
+  .confirm-btn:disabled{
+    background:var(--surface1); color:var(--overlay); cursor:not-allowed; opacity:.6;
+  }
+
+  .feedback{
+    margin-top:14px;
+    border-radius:10px;
+    padding:13px 16px;
+    font-size:.85rem;
+    display:flex; gap:10px; align-items:flex-start;
+    animation:fadein .25s ease;
+  }
+  .feedback.ok{background:rgba(166,227,161,0.08); border:1px solid rgba(166,227,161,0.35); color:var(--text);}
+  .feedback.bad{background:rgba(243,139,168,0.08); border:1px solid rgba(243,139,168,0.35); color:var(--text);}
+  .feedback .icon{font-size:1.1rem; flex-shrink:0; line-height:1;}
+  .feedback .fb-title{font-weight:700; margin-bottom:4px; display:block;}
+  .feedback.ok .fb-title{color:var(--green);}
+  .feedback.bad .fb-title{color:var(--red);}
+  .feedback .fb-body{color:var(--subtext);}
+
+  @keyframes fadein{from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);}}
+
+  .results-panel{
+    position:relative;
+    margin:50px 0 30px;
+    background:linear-gradient(160deg, rgba(203,166,247,0.10), rgba(24,24,37,0.4));
+    border:1px solid var(--surface0);
+    border-radius:18px;
+    padding:30px 26px;
+    text-align:center;
+  }
+  .results-panel h2{margin:0 0 4px; font-size:1.3rem;}
+  .results-panel .sub{color:var(--subtext); font-size:.85rem; margin-bottom:22px;}
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+    margin-bottom:22px;
+  }
+  .stat{
+    background:var(--mantle); border:1px solid var(--surface0); border-radius:12px;
+    padding:16px 10px;
+  }
+  .stat .num{font-size:1.7rem; font-weight:800; display:block;}
+  .stat.acertos .num{color:var(--green);}
+  .stat.erros .num{color:var(--red);}
+  .stat.percent .num{color:var(--accent2);}
+  .stat .lbl{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--subtext);}
+
+  .ring-wrap{display:flex; justify-content:center; margin-bottom:22px;}
+  .restart-btn{
+    background:var(--surface0); color:var(--text);
+    border:1px solid var(--surface1);
+    border-radius:10px; padding:12px 26px;
+    font-weight:700; font-size:.9rem; cursor:pointer;
+    transition:background .15s, transform .1s;
+  }
+  .restart-btn:hover{background:var(--surface1); transform:translateY(-1px);}
+
+  .pending-note{
+    font-size:.8rem; color:var(--peach); margin-top:14px;
+  }
+
+  footer{
+    text-align:center; color:var(--overlay); font-size:.75rem; padding:24px 0 10px;
+  }
+
+  @media (max-width:520px){
+    .stat-grid{grid-template-columns:1fr 1fr 1fr; gap:8px;}
+    .stat .num{font-size:1.3rem;}
+    main{padding:20px 12px 0;}
+    .card{padding:18px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1><span class="dot"></span>Simulado MPT — TI</h1>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-label" id="progressLabel">0 / 40 respondidas</span>
+  </div>
+</div>
+
+<main>
+  <div class="intro">
+    <h2>Simulado de Tecnologia da Informação</h2>
+    <p>40 questões reunidas das provas de concurso MPT 2019 e MPT 2021. Selecione uma alternativa e clique em <strong>"Confirmar Resposta"</strong> para validar cada questão. O painel de resultado fica disponível ao final.</p>
+  </div>
+
+  <div id="quizRoot"></div>
+
+  <div class="results-panel" id="resultsPanel">
+    <h2>Painel de Resultados</h2>
+    <p class="sub" id="resultsSub">Responda todas as questões para ver seu desempenho completo.</p>
+    <div class="stat-grid">
+      <div class="stat acertos"><span class="num" id="statAcertos">0</span><span class="lbl">Acertos</span></div>
+      <div class="stat erros"><span class="num" id="statErros">0</span><span class="lbl">Erros</span></div>
+      <div class="stat percent"><span class="num" id="statPercent">0%</span><span class="lbl">Aproveitamento</span></div>
+    </div>
+    <button class="restart-btn" id="restartBtn">↺ Refazer Simulado</button>
+    <div class="pending-note" id="pendingNote"></div>
+  </div>
+
+  <footer>Simulado gerado a partir das provas MPT 2019 / 2021 — uso exclusivamente para estudo.</footer>
+</main>
+
+<script>
+const QUIZ_DATA = [
+  { exam: "Prova MPT 2019 — Tecnologia da Informação", divider: true },
+  { context: "Contexto para as questões 1, 2 e 3: Um chamado emergencial foi aberto, em nome de uma Procuradora do Ministério Público do Trabalho da 22ª Região Teresina/PI, no qual seu computador corporativo não funcionava adequadamente. A situação era ainda mais delicada devido ao fato de documentos importantes e sigilosos estarem armazenados no drive F do computador (o sistema operacional encontra-se no drive C) e que haveria um prejuízo muito grande caso houvesse perda desses arquivos. Em uma análise inicial, constatou-se que o computador, ao ser ligado, chegava a carregar o sistema operacional, mas em pouco tempo reiniciava. Em outras tentativas, ele travava com erros e tinha que ser desligado manualmente." },
+  { q: "Há uma indicação preliminar que o erro pode ser causado por algum componente de hardware. Indique a alternativa que mostra qual o componente com falha que geralmente apresenta esse comportamento:",
+    options: {a:"Leitor de CD/DVD.", b:"Webcam.", c:"Ventoinha do computador.", d:"Mouse.", e:"Monitor de vídeo."},
+    correct:"c",
+    explanation:"Falhas na ventoinha (cooler) causam superaquecimento do processador. Para evitar danos permanentes, a placa-mãe aciona uma proteção térmica que trava ou reinicia a máquina. Componentes como leitor de CD, webcam e mouse não interferem no carregamento básico do sistema." },
+  { q: "Se, após um primeiro diagnóstico, o problema não for de hardware e sim de arquivos corrompidos do Sistema Operacional, indique qual opção abaixo seria mais indicada para a resolução do problema:",
+    options: {a:"Formatação da partição do sistema operacional e sua posterior reinstalação.", b:"Formatação de todo o disco rígido, drives C e E, e reinstalação do sistema operacional.", c:"Formatação da partição do drive E e recuperação do sistema operacional.", d:"Atualização da BIOS e formatação de todo o disco rígido, com a reinstalação do sistema operacional.", e:"Formatação da instalação da partição do drive E e reinstalação do sistema no drive C."},
+    correct:"a",
+    explanation:"Como os dados sigilosos estão armazenados em uma partição separada (drive F/E), formatar apenas a partição do sistema (drive C) resolve a corrupção sem apagar os arquivos do usuário." },
+  { q: "Considerando a relevância e o sigilo dos dados, a melhor estratégia de backup seria:",
+    options: {a:"Fazer uma cópia dos dados para um HD externo, de posse da equipe de suporte de TI.", b:"Subir os dados para um serviço de nuvem pública, como Dropbox, na conta particular do técnico de TI.", c:"Realizar uma cópia de segurança no servidor de arquivos do Ministério Público do Trabalho, com acesso autorizado apenas ao proprietário dos dados.", d:"Tentar compactar os dados e copiá-los para o drive C do disco rígido, que possui ainda espaço livre.", e:"Criar uma nova partição no disco rígido e fazer uma cópia de segurança."},
+    correct:"c",
+    explanation:"Em ambientes corporativos com dados sigilosos, o backup deve ser feito em infraestrutura controlada pelo órgão, com políticas de acesso restritas. Usar nuvem pública pessoal ou HDs externos soltos quebra a cadeia de confidencialidade e segurança." },
+  { q: "Qual dos conectores de vídeo transmite o sinal analógico:",
+    options: {a:"HDMI", b:"VGA", c:"DVI", d:"DisplayPort", e:"USB"},
+    correct:"b",
+    explanation:"O padrão VGA (Video Graphics Array) é o único da lista que trafega sinal de vídeo exclusivamente de forma analógica. HDMI, DVI e DisplayPort lidam com sinais digitais." },
+  { q: "O agrupamento lógico de estações, serviços e dispositivos de rede que não estão restritos a um segmento físico de uma rede local. O conceito descrito acima refere-se a:",
+    options: {a:"Largura de banda", b:"Espectro de sinal", c:"VLAN", d:"VPN", e:"WAN"},
+    correct:"c",
+    explanation:"VLAN (Virtual Local Area Network) é a tecnologia que permite criar redes lógicas separadas dentro de uma mesma infraestrutura de switches físicos. VPN é para conexões seguras externas e WAN é para interconexões de longa distância." },
+  { q: "Considerando que um equipamento de rede do MPT recebeu o IP 172.18.20.118 e máscara de sub-rede 255.255.255.0, informe o endereço da rede deste equipamento:",
+    options: {a:"172.18.20.0", b:"172.18.20.255", c:"255.255.255.0", d:"172.18.20.137", e:"172.18.20.1"},
+    correct:"a",
+    explanation:"Uma máscara 255.255.255.0 (ou /24) indica que os três primeiros octetos compõem o endereço da rede, e apenas o último octeto identifica o host. Logo, todos os IPs 172.18.20.x pertencem à rede base 172.18.20.0." },
+  { context: "Contexto para as questões 7, 8 e 9: Foi relatado um problema de rede em alguns computadores da Coordenadoria de 1º Grau do Ministério Público do Trabalho da 22ª Região - Teresina/PI. Um técnico de informática foi enviado ao local e constatou que as máquinas não tinham conectividade. Em uma delas, ao verificar o IP da máquina, foi constatado que o IP registrado era 169.254.103.72. Em outro computador, observou-se que a interface de rede cabeada do computador emitia apenas uma luz alaranjada." },
+  { q: "O endereço 169.254.103.72 tem uma característica peculiar. Qual seria ela?",
+    options: {a:"É um endereço de rede classe A, que acusa problema de conexão apenas para internet, mas não afeta a rede local.", b:"É um endereço classe B, APIPA (Automatic Private IP Addressing), sem conexão à rede local e internet.", c:"É um endereço classe C, LAN, que acusa problema de conexão para rede local, com acesso permitido à internet.", d:"É um endereço classe C, WAN, atribuído para testes.", e:"É um endereço classe A, reservado a roteadores de WAN."},
+    correct:"b",
+    explanation:"Endereços iniciados em 169.254.x.x são atribuídos automaticamente pelo recurso APIPA do sistema operacional sempre que a máquina solicita um IP, mas não consegue se comunicar com um servidor DHCP na rede." },
+  { q: "Em relação à luz emitida na interface de rede, responda à questão correta:",
+    options: {a:"A luz alaranjada indica que há atividade de rede.", b:"A luz alaranjada indica que a conexão é de internet.", c:"A luz alaranjada indica que há alguma falha na conexão.", d:"A luz alaranjada indica que a conexão é apenas local.", e:"A luz alaranjada indica que a conexão é 10000 Mbps."},
+    correct:"c",
+    explanation:"No contexto de diagnóstico de conectividade nula, uma luz alaranjada constante na placa de rede, fora do padrão verde comum, frequentemente acusa problemas físicos de enlace (cabo danificado, mal clicado ou falha na porta do switch)." },
+  { q: "A causa raiz mais provável, dentre as alternativas abaixo, para os problemas verificados, é:",
+    options: {a:"Falha no servidor DHCP.", b:"Falha no cabeamento de rede.", c:"Falha na internet.", d:"Falha na fibra ótica do provedor.", e:"Falha no protocolo TCP/IP."},
+    correct:"a",
+    explanation:"O indício mais forte é o endereço APIPA (169.254.x.x). Ele comprova que a rede local falhou na entrega automática de configurações lógicas, o que aponta diretamente para a inoperância do servidor DHCP." },
+  { q: "RAID é uma tecnologia que permite o uso de múltiplos discos para aumentar a disponibilidade, desempenho e para reduzir a perda de informações. Qual classificação de RAID oferece o melhor desempenho, mas não oferece redundância contra falhas:",
+    options: {a:"RAID Y", b:"RAID X", c:"RAID 0", d:"RAID 2", e:"RAID 1 e 3"},
+    correct:"c",
+    explanation:"O RAID 0 (Striping) divide os dados simultaneamente entre os discos, somando suas velocidades de gravação/leitura. Porém, por não espelhar informações, a quebra de um único disco destrói todo o arranjo lógico sem chances de recuperação." },
+  { q: "A tecnologia central do Datacenter que permite que um único servidor físico possa hospedar várias máquinas virtuais:",
+    options: {a:"Virtualização", b:"Rack", c:"Java", d:"Nyquist", e:"Vmware"},
+    correct:"a",
+    explanation:"A virtualização é o conceito e a tecnologia que abstrai o hardware através de um hypervisor, permitindo a execução de múltiplos sistemas operacionais isolados (VMs) na mesma máquina física. Vmware é uma marca/empresa, não o nome da tecnologia em si." },
+  { q: "Considerando os conceitos básicos de segurança da informação, indique a opção correspondente à garantia de que os dados recebidos estão exatamente como foram enviados pelo emissor:",
+    options: {a:"Legalidade", b:"Eficiência", c:"Disponibilidade", d:"Integridade", e:"Eficácia"},
+    correct:"d",
+    explanation:"Na Segurança da Informação, Integridade assegura que o conteúdo não sofreu alterações não autorizadas, danos ou corrupção no trajeto. Confidencialidade garante o sigilo, e Disponibilidade garante o acesso." },
+  { q: "Mecanismo de proteção que controla a passagem de pacotes entre redes locais ou externas:",
+    options: {a:"Tunelamento", b:"Firewall", c:"Segmento", d:"Roteador", e:"VPN"},
+    correct:"b",
+    explanation:"O firewall é o \"porteiro\" das redes. Ele inspeciona e controla todo o tráfego de entrada e saída, bloqueando ou permitindo pacotes com base num conjunto rigoroso de regras de segurança para proteger a rede interna." },
+  { q: "Para divulgar de forma eficiente as informações ao público, o Ministério Público do Trabalho elaborou portais Web, que podem ser acessados por qualquer navegador. O portal que é usado exclusivamente pelos colaboradores do órgão caracteriza-se por ser do tipo:",
+    options: {a:"Internet.", b:"Intranet.", c:"Websphere.", d:"Wiki.", e:"Blogs."},
+    correct:"b",
+    explanation:"A Intranet utiliza exatamente os mesmos protocolos e tecnologias da Internet (navegadores, HTTP, HTML), mas sua abrangência é privada, restrita aos limites físicos ou lógicos da organização e aos seus funcionários." },
+  { q: "Os comunicadores de mensagem instantânea, ferramentas de \"instant messaging\", estão presentes na rotina das pessoas, inclusive no meio corporativo. É uma vantagem desse tipo de serviço:",
+    options: {a:"Realizar reuniões com várias pessoas ao mesmo tempo ainda que elas estejam em outras localidades.", b:"Envio de arquivos pelo chat, desde que não sejam imagens.", c:"Ter a certeza que a pessoa com quem você está falando é realmente ela, já que o seu nome aparece online.", d:"Saber o que realmente as pessoas no chat estão sentindo, uma vez que elas podem expressar seus sentimentos através de emoticons.", e:"Porque todos os servidores públicos municipais, estaduais e federais utilizam o mesmo comunicador de mensagem instantânea."},
+    correct:"a",
+    explanation:"A principal força técnica e colaborativa dessas ferramentas corporativas é a quebra de barreiras geográficas, viabilizando conversas e conferências em tempo real (síncronas) entre equipes distribuídas." },
+  { tag:"Português", q: "Assinale a alternativa que exemplifica palavra acentuada com base na mesma regra de acentuação da palavra ínterim:",
+    options: {a:"uníssono", b:"assédio", c:"juízes", d:"réu", e:"distúrbio"},
+    correct:"a",
+    explanation:"A palavra \"ínterim\" é proparoxítona (sílaba tônica na antepenúltima), logo é acentuada por essa regra. Na lista, a única proparoxítona é \"uníssono\"." },
+  { tag:"Português", q: "Assinale a alternativa em que a palavra destacada está escrita em desacordo com as regras de acentuação:",
+    options: {a:"O Ministério Público do Trabalho mantem o argumento de legitimidade para a defesa dos interesses individuais homogêneos.", b:"Os litisconsortes têm prazo em dobro para contestar.", c:"Os sindicalistas sempre intervêm no processo para acompanhá-lo.", d:"Em caso de procedência do pedido, a condenação será genérica.", e:"O acórdão foi publicado ontem."},
+    correct:"a",
+    explanation:"O sujeito \"O Ministério Público do Trabalho\" está no singular. A grafia correta do verbo manter no singular é \"mantém\" (com acento agudo); no plural seria \"mantêm\" (circunflexo). O texto omitiu o acento agudo." },
+  { tag:"Português", q: "Escolha a opção em que há erro de grafia em alguma das palavras:",
+    options: {a:"A confissão exsurge do próprio argumento de defesa.", b:"A empresa ré possui elevada taxa de absenteísmo.", c:"O preposto da empresa adota um comportamento asintoso contra os empregados.", d:"O advogado visou o termo de ajuste de conduta.", e:"O conteúdo da sentença está adstrito aos pedidos formulados na petição inicial."},
+    correct:"c",
+    explanation:"O erro de grafia está na palavra \"asintoso\". O correto é \"acintoso\" (com a letra C), que significa algo provocador, que ofende ou desrespeita." },
+  { tag:"Português", q: "Escolha a alternativa que representa o uso incorreto do hífen:",
+    options: {a:"Ex-empregado.", b:"Sub-rogado.", c:"Contra-razões.", d:"Vice-presidente.", e:"Pró-labore."},
+    correct:"c",
+    explanation:"Pelas regras do Novo Acordo Ortográfico, prefixos terminados em vogal que se anexam a palavras iniciadas com 'R' ou 'S' não levam hífen; a consoante deve ser dobrada. Logo, o correto é \"contrarrazões\"." },
+  { tag:"Português", q: "Marque a alternativa que apresenta incorreção na regência verbal:",
+    options: {a:"Todos assistiram a uma brilhante sustentação oral.", b:"O Procurador do Trabalho foi ao fórum.", c:"A ausência à audiência implica revelia e confissão.", d:"O estagiário aspirava ao cargo de Procurador do Trabalho.", e:"A peça recursal obedeceu todos os requisitos."},
+    correct:"e",
+    explanation:"O verbo \"obedecer\" exige transitividade indireta, ou seja, pede a preposição \"a\". A frase correta gramaticalmente seria \"A peça recursal obedeceu a todos os requisitos\"." },
+
+  { exam: "Prova MPT 2021 — Tecnologia da Informação", divider: true },
+  { q: "O sistema binário é base para a Álgebra Booleana, que permite fazer operações lógicas e aritméticas usando-se apenas dois dígitos ou dois estados (1 ou 0, ligado e desligado). O número binário correspondente ao decimal 173 é o:",
+    options: {a:"11101110", b:"10111011", c:"10101101", d:"10101111"},
+    correct:"c",
+    explanation:"Para converter o decimal 173 para binário, utilizamos os pesos das potências de base 2 (128, 64, 32, 16, 8, 4, 2, 1). 173 = 128 + 32 + 8 + 4 + 1. Ativando os bits nessas posições, forma-se o binário 10101101." },
+  { tag:"UFSC-2019", q: "Atualmente são utilizadas duas tecnologias para armazenamento permanente de dados em computadores pessoais: HDD (hard disk drive) e SSD (solid-state drive). Considere: I. A tecnologia SSD consome menos energia que a HDD. II. A velocidade de leitura/gravação no SSD é superior à do HDD. III. Considerando a capacidade de armazenamento, os dispositivos SSD são proporcionalmente mais caros que os HDD. Assinale a alternativa correta:",
+    options: {a:"Somente as afirmativas II e III estão corretas.", b:"Somente a II está correta.", c:"Somente a I está correta.", d:"As afirmativas I, II e III estão corretas."},
+    correct:"d",
+    explanation:"As unidades SSD utilizam memória flash não volátil e não possuem partes móveis (motores/agulhas como no HDD), o que confere a elas menor consumo de energia e altíssima velocidade. O contraponto é que o custo por Gigabyte armazenado ainda é superior ao do HDD." },
+  { q: "Marque a alternativa que não apresenta um Sistema Operacional:",
+    options: {a:"Ubuntu Linux.", b:"MS Visio.", c:"MS Windows 10.", d:"Mac OS."},
+    correct:"b",
+    explanation:"O Microsoft Visio é um software aplicativo voltado estritamente para a criação de diagramas, organogramas e fluxogramas vetoriais. Ele roda \"sobre\" um sistema operacional, não sendo um em si." },
+  { q: "Este é um padrão de boot remoto desenvolvido pela Intel, que consiste em um pequeno software, gravado na ROM da placa de rede, que permite que o PC dê boot através da rede, carregando todo o software necessário a partir de um servidor previamente configurado:",
+    options: {a:"PXE", b:"BIOS", c:"DRBL", d:"Bootstrap"},
+    correct:"a",
+    explanation:"O Preboot Execution Environment (PXE) é o padrão que instrui a placa de rede a procurar configurações lógicas (DHCP) e efetuar o download da imagem de um sistema operacional pela rede (geralmente via TFTP) antes mesmo do armazenamento local ser acionado." },
+  { q: "\"Entende o quadro e o transforma em pacote, entende o MAC e o transforma em IP\". O enunciado refere-se a qual camada do Modelo OSI:",
+    options: {a:"Transporte.", b:"Física.", c:"Rede.", d:"Enlace."},
+    correct:"c",
+    explanation:"O fluxo ascendente no Modelo OSI dita que a Camada 3 (Rede) recebe os \"quadros\" encapsulados com os endereços físicos (MAC) vindos da Camada de Enlace, remove esse cabeçalho extra e expõe os \"pacotes\" contendo os endereços lógicos (IP)." },
+  { q: "Considerando o endereçamento IPv4, os endereços 192.168.0.1 e 10.52.36.11 são, respectivamente, das classes:",
+    options: {a:"A e C", b:"B e D", c:"D e B", d:"C e A"},
+    correct:"d",
+    explanation:"No formato classful legado, o primeiro octeto define a classe: de 1 a 126 pertence à Classe A (10.x.x.x cai aqui). De 128 a 191 é Classe B. De 192 a 223 é Classe C (192.168.x.x se encaixa aqui)." },
+  { q: "A máscara-padrão da classe C está representada por qual alternativa abaixo:",
+    options: {a:"255.255.0.0", b:"255.240.0.0", c:"255.255.255.0", d:"255.0.0.0"},
+    correct:"c",
+    explanation:"O endereçamento Classe C bloqueia obrigatoriamente os três primeiros octetos (24 bits) para identificar a rede e deixa apenas o último octeto (8 bits) livre para os hosts: 255.255.255.0." },
+  { tag:"PETROBRAS 2012/CESGRANRIO", q: "Ao verificar as propriedades de protocolo TCP/IP de um computador conectado a uma rede local, obtiveram-se: Endereço IP: 192.158.45.74, Máscara de sub-rede: 255.255.255.224, Gateway padrão: 192.158.45.67. Considerando essas informações, conclui-se que, na sub-rede à qual o host pertence, é possível:",
+    options: {a:"conectar, no máximo, 30 equipamentos.", b:"conectar, no máximo, 32 equipamentos.", c:"atribuir o endereço 192.158.45.98 a um outro host.", d:"atribuir o endereço 192.158.45.36 a um outro host."},
+    correct:"a",
+    explanation:"O último octeto da máscara é 224 (128+64+32), restando 5 bits para hosts. 2 elevado a 5 dá 32 endereços por sub-rede; subtraindo o endereço de rede e o de broadcast, restam exatamente 30 endereços úteis." },
+  { q: "O serviço de e-mails teve uma mudança em 2013 no que se refere ao aumento da segurança dos servidores, ocasionando o retardo no aumento de spams. Marque a alternativa que apresenta essa mudança:",
+    options: {a:"Mudança da porta padrão de 25 para 587.", b:"Aumento da criptografia no tráfego de e-mails.", c:"Atualização obrigatória dos servidores.", d:"Obrigatoriedade de anti-spam nos servidores."},
+    correct:"a",
+    explanation:"A porta TCP 25 tradicional (SMTP) permitia o tráfego sem exigir autenticação válida do remetente, o que facilitava o abuso em spams. A migração oficial para a porta 587 impôs a exigência do \"SMTP Auth\"." },
+  { q: "Podemos afirmar que o serviço de DHCP entrega:",
+    options: {a:"IPs.", b:"Senhas.", c:"Regras de segurança.", d:"Usuários."},
+    correct:"a",
+    explanation:"DHCP (Dynamic Host Configuration Protocol) é o protocolo cuja atribuição é facilitar o trabalho de administradores entregando dinamicamente endereços IP e outras configurações lógicas de rede (como DNS e Gateway) para as máquinas clientes." },
+  { q: "O que o serviço de FTP provê:",
+    options: {a:"Compartilhamento de Usuários.", b:"Compartilhamento de Arquivos.", c:"Compartilhamento de Impressoras.", d:"Compartilhamento de Internet."},
+    correct:"b",
+    explanation:"O nome FTP (File Transfer Protocol) significa literalmente Protocolo de Transferência de Arquivos. Sua provisão nativa em rede é enviar ou baixar arquivos remotamente." },
+  { q: "Podemos afirmar que o Registro SOA é referente ao serviço de rede:",
+    options: {a:"FTP.", b:"DNS.", c:"SSH.", d:"de arquivos."},
+    correct:"b",
+    explanation:"O SOA (Start of Authority) é o registro vital e obrigatório dentro de um servidor DNS. Ele declara os parâmetros essenciais de uma \"Zona\", como o servidor mestre do domínio, tempo de expiração e contatos administrativos." },
+  { q: "A VMware lança em 2002 o ESX Server 1.5, seu primeiro hypervisor. Ao consolidar vários servidores em menos dispositivos físicos, esse produto inovador aumenta o desempenho, simplifica a administração da TI e ajuda as organizações a reduzir custos. Estamos falando de:",
+    options: {a:"Compartilhamento de Arquivos.", b:"Virtualização.", c:"VPN.", d:"Espelhamento de Disco."},
+    correct:"b",
+    explanation:"O conceito de consolidação física mencionado no enunciado só é alcançado pela Virtualização. O hypervisor divide e aloca o hardware do servidor físico para que várias máquinas virtuais vivam isoladamente e ao mesmo tempo nesse equipamento." },
+  { q: "A porta do serviço HTTPS é:",
+    options: {a:"80.", b:"53.", c:"443.", d:"21."},
+    correct:"c",
+    explanation:"O HTTPS (protocolo web seguro e criptografado com SSL/TLS) escuta e trafega dados por padrão sempre na porta TCP 443. A porta 80 atende ao tráfego HTTP em texto claro." },
+  { q: "O serviço de redes sem fio utiliza o padrão 802.11, utilizando as frequências de 5 GHz; este padrão é uma das opções mais utilizadas atualmente no mundo:",
+    options: {a:"E.", b:"G.", c:"A.", d:"AC."},
+    correct:"d",
+    explanation:"O padrão 802.11ac marcou a popularização da transmissão exclusiva e aprimorada na frequência de 5GHz, operando em velocidades de Gigabit, diferindo de opções anteriores como B, G ou N, que usavam a faixa saturada de 2,4 GHz." },
+  { q: "É correto afirmar que uma DMZ é:",
+    options: {a:"uma área do disco rígido.", b:"uma pasta do sistema operacional Windows 10.", c:"uma área de rede isolada, controlada e monitorada contra invasões de rede.", d:"uma atualização crítica."},
+    correct:"c",
+    explanation:"Uma Zona Desmilitarizada (DMZ) é uma sub-rede neutra e segmentada criada para alojar os serviços e servidores que precisam estar visíveis para a Internet externa (como sites), criando uma barreira para que o público não toque na rede interna sensível." },
+  { q: "Um firewall é um dos recursos de segurança de uma rede, e é um filtro de:",
+    options: {a:"usuários.", b:"protocolos.", c:"vírus.", d:"pacotes."},
+    correct:"d",
+    explanation:"A ação técnica e fundamental de qualquer firewall de rede, em sua essência, é efetuar o filtro de pacotes. Ele analisa endereços e o estado dos pacotes IP que tentam atravessar o roteador para decidir bloqueá-los ou repassá-los." },
+  { q: "Um equipamento do tipo roteador utiliza tabelas de rotas para decidir sobre o encaminhamento de cada pacote de dados recebido. Um roteador que rode o protocolo UDP atua em que camada do Modelo TCP/IP?",
+    options: {a:"Aplicação.", b:"Transporte.", c:"Internet.", d:"Acesso à rede."},
+    correct:"c",
+    explanation:"Independentemente dos protocolos que utilize internamente para preencher tabelas (como o RIP por UDP), a função fundamental do roteador (encaminhar endereços lógicos por IP) atua na camada de \"Rede\" do Modelo OSI, equivalente à camada \"Internet\" do modelo TCP/IP." },
+  { q: "Os algoritmos com uma das funções hash MD5 ou SHA-1 são amplamente utilizados em:",
+    options: {a:"Assinatura digital.", b:"Criptografia simétrica.", c:"Criptomoedas.", d:"Plano de Backup."},
+    correct:"a",
+    explanation:"Funções Hash (MD5 e SHA-1) são algoritmos unidirecionais que geram um resumo digital compacto de um bloco de dados. Esse resumo é a peça principal dentro dos processos de assinatura digital, garantindo que o arquivo não sofreu alteração sem que a assinatura acuse o erro." },
+  { tag:"UFPA-2017", q: "Sobre as boas práticas em Segurança da Informação, considere os itens: I. Atribuição de responsabilidades para a segurança da informação. II. Conscientização, educação e treinamento em segurança da informação. III. Gestão do Portfólio de Serviços. IV. Gestão de Continuidade do Negócio. Estão CORRETOS:",
+    options: {a:"I, II e III.", b:"II, III e IV.", c:"I, II e IV.", d:"I, III e IV."},
+    correct:"c",
+    explanation:"A distribuição clara de responsabilidades (I), a educação de usuários (II) para evitar ataques sociais, e um plano para recuperação e continuidade após um desastre (IV) são práticas elementares da Segurança da Informação. Apenas \"Gestão do Portfólio de Serviços\" (III) foge à regra, por ser um pilar de gestão de TI da biblioteca ITIL, não de segurança." }
+];
+
+// ---- build runtime question list (flatten, keep contexts/dividers attached) ----
+const questions = [];
+QUIZ_DATA.forEach(item => {
+  if (item.q) questions.push(item);
+});
+
+const state = {}; // id -> { selected, locked, correct }
+
+function renderQuiz(){
+  const root = document.getElementById('quizRoot');
+  root.innerHTML = '';
+  let qIndex = 0;
+
+  QUIZ_DATA.forEach((item) => {
+    if (item.divider){
+      const div = document.createElement('div');
+      div.className = 'exam-divider';
+      div.innerHTML = `<div class="line"></div><span>${escapeHtml(item.exam)}</span><div class="line"></div>`;
+      root.appendChild(div);
+      return;
+    }
+    if (item.context){
+      const ctx = document.createElement('div');
+      ctx.className = 'context-box';
+      ctx.innerHTML = `<strong>Contexto</strong>${escapeHtml(item.context)}`;
+      root.appendChild(ctx);
+      return;
+    }
+    if (item.q){
+      qIndex++;
+      const id = 'q' + qIndex;
+      if (!state[id]) state[id] = { selected: null, locked: false };
+      root.appendChild(buildQuestionCard(id, qIndex, item));
+    }
+  });
+
+  updateProgress();
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.innerText = str;
+  return d.innerHTML;
+}
+
+function buildQuestionCard(id, num, item){
+  const card = document.createElement('section');
+  card.className = 'card';
+  card.id = id + '-card';
+
+  const head = document.createElement('div');
+  head.className = 'q-head';
+  head.innerHTML = `
+    <div class="q-num">${num}</div>
+    <div class="q-text">${escapeHtml(item.q)}${item.tag ? `<span class="q-tag">${escapeHtml(item.tag)}</span>` : ''}</div>
+  `;
+  card.appendChild(head);
+
+  const optList = document.createElement('ul');
+  optList.className = 'options';
+  optList.id = id + '-options';
+
+  Object.entries(item.options).forEach(([letter, text]) => {
+    const li = document.createElement('li');
+    li.className = 'option';
+    li.dataset.letter = letter;
+    li.id = `${id}-opt-${letter}`;
+    li.innerHTML = `
+      <input type="radio" name="${id}" value="${letter}" id="${id}-radio-${letter}">
+      <span class="letter">${letter})</span>
+      <span class="opt-text">${escapeHtml(text)}</span>
+    `;
+    li.addEventListener('click', (e) => {
+      if (state[id].locked) return;
+      const radio = li.querySelector('input');
+      radio.checked = true;
+      state[id].selected = letter;
+      card.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      li.classList.add('selected');
+    });
+    optList.appendChild(li);
+  });
+  card.appendChild(optList);
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'confirm-btn';
+  confirmBtn.id = id + '-confirm';
+  confirmBtn.textContent = 'Confirmar Resposta';
+  confirmBtn.addEventListener('click', () => confirmAnswer(id, item, card));
+  card.appendChild(confirmBtn);
+
+  const fbHolder = document.createElement('div');
+  fbHolder.id = id + '-feedback';
+  card.appendChild(fbHolder);
+
+  return card;
+}
+
+function confirmAnswer(id, item, card){
+  const s = state[id];
+  if (!s.selected || s.locked) return;
+
+  const isCorrect = s.selected === item.correct;
+  s.locked = true;
+  s.correct = isCorrect;
+
+  // lock options
+  card.querySelectorAll('.option').forEach(opt => {
+    const letter = opt.dataset.letter;
+    opt.classList.add('disabled');
+    opt.querySelector('input').disabled = true;
+    if (letter === item.correct) opt.classList.add('is-correct');
+    if (letter === s.selected && !isCorrect) opt.classList.add('is-wrong-selected');
+  });
+
+  card.classList.add(isCorrect ? 'correct-card' : 'wrong-card');
+  document.getElementById(id + '-confirm').disabled = true;
+
+  const fb = document.getElementById(id + '-feedback');
+  fb.innerHTML = `
+    <div class="feedback ${isCorrect ? 'ok' : 'bad'}">
+      <span class="icon">${isCorrect ? '✅' : '❌'}</span>
+      <div>
+        <span class="fb-title">${isCorrect ? 'Resposta correta!' : 'Resposta incorreta.'}</span>
+        <span class="fb-body">${escapeHtml(item.explanation)}</span>
+      </div>
+    </div>
+  `;
+
+  updateProgress();
+  updateResults();
+}
+
+function updateProgress(){
+  const total = questions.length;
+  const answered = Object.values(state).filter(s => s.locked).length;
+  const pct = total ? Math.round((answered/total)*100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${answered} / ${total} respondidas`;
+}
+
+function updateResults(){
+  const total = questions.length;
+  const answered = Object.values(state).filter(s => s.locked);
+  const acertos = answered.filter(s => s.correct).length;
+  const erros = answered.length - acertos;
+  const pct = answered.length ? Math.round((acertos/answered.length)*100) : 0;
+
+  document.getElementById('statAcertos').textContent = acertos;
+  document.getElementById('statErros').textContent = erros;
+  document.getElementById('statPercent').textContent = pct + '%';
+
+  const sub = document.getElementById('resultsSub');
+  const note = document.getElementById('pendingNote');
+  if (answered.length === total){
+    sub.textContent = `Simulado finalizado! Você acertou ${acertos} de ${total} questões.`;
+    note.textContent = '';
+  } else {
+    sub.textContent = 'Resultado parcial — responda todas as questões para fechar o simulado.';
+    note.textContent = `Faltam ${total - answered.length} questão(ões) para o resultado final.`;
+  }
+}
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  Object.keys(state).forEach(k => delete state[k]);
+  renderQuiz();
+  updateResults();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+renderQuiz();
+updateResults();
+</script>
+</body>
+</html>
